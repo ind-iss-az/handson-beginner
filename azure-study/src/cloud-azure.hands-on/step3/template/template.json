@@ -1,0 +1,147 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "string",
+            "metadata": {
+                "description": "your name."
+            }
+        },
+        "vnet addressPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "Virtual Network address range."
+            }
+        },
+        "dmz-subnet addressPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "dmz-subnet address range. Select from virtual network address range."
+            }
+        },
+        "web-subnet addressPrefix": {
+            "type": "string",
+            "metadata": {
+                "description": "web-subnet address range. Select from virtual network address range."
+            }
+        }
+    },
+    "variables": {
+        "dmznsgName": "[concat('handson-',parameters('name'),'-dmznsg')]",
+        "webnsgName": "[concat('handson-',parameters('name'),'-webnsg')]",
+        "vnetName": "[concat('handson-',parameters('name'),'-vnet')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-04-01",
+            "name": "[variables('dmznsgName')]",
+            "location": "japaneast",
+            "tags": {
+                "owner": "[parameters('name')]"
+            },
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "Port_443",
+                        "properties": {
+                            "protocol": "TCP",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "443",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    },
+                    {
+                        "name": "AllowApplicationGateway",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "65503-65534",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 110,
+                            "direction": "Inbound",
+                            "sourcePortRanges": [],
+                            "destinationPortRanges": [],
+                            "sourceAddressPrefixes": [],
+                            "destinationAddressPrefixes": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-04-01",
+            "name": "[variables('webnsgName')]",
+            "location": "japaneast",
+            "tags": {
+                "owner": "[parameters('name')]"
+            },
+            "properties": {
+                "securityRules": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2020-04-01",
+            "name": "[variables('vnetName')]",
+            "location": "japaneast",
+            "tags": {
+                "owner": "[parameters('name')]"
+            },
+            "dependsOn": [
+                "[variables('dmznsgName')]",
+                "[variables('webnsgName')]"
+            ],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnet addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "dmz-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('dmz-subnet addressPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('dmznsgName'))]"
+                            },
+                            "serviceEndpoints": [],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    },
+                    {
+                        "name": "web-subnet",
+                        "properties": {
+                            "addressPrefix": "[parameters('web-subnet addressPrefix')]",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('webnsgName'))]"
+                            },
+                            "serviceEndpoints": [],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        }
+    ]
+}

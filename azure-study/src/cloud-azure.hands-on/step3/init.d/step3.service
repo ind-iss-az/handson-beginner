@@ -1,0 +1,12 @@
+[Unit]
+Description = azure handson step3
+
+[Service]
+User = handson-user
+WorkingDirectory = /home/handson-user/go/bin/
+ExecStart = /home/handson-user/step3.sh
+Restart = no
+Type = simple
+
+[Install]
+WantedBy = multi-user.target
